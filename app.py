@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, r2_score, mean_absolute_error, confusion_matrix, mean_squared_error
+from matplotlib.ticker import PercentFormatter
 
 # ==========================================
 # 🎨 CUSTOM CSS STYLING
@@ -282,7 +283,8 @@ def load_models():
             'regresi': joblib.load('models/model_regresi_pengeluaran.joblib'),
             'regresi_impulsif': joblib.load('models/model_regresi_impulsive.joblib'),
             'kmeans': joblib.load('models/model_kmeans_clustering.joblib'),
-            'scaler': joblib.load('models/scaler_untuk_clustering.joblib')
+            'scaler': joblib.load('models/scaler_untuk_clustering.joblib'),
+            'metrics': joblib.load('models/evaluation_metrics.joblib')
         }
         return models
     except Exception as e:
@@ -580,6 +582,7 @@ if menu == "🏠 Beranda":
         st.error("Data CSV tidak ditemukan. Pastikan file 'cleaned_processed_final.csv' tersedia.")
 
 # --- HALAMAN ANALISIS EDA ---
+# --- HALAMAN ANALISIS EDA ---
 elif menu == "🔍 Analisis EDA":
     st.markdown("""
         <div class='main-header'>
@@ -632,6 +635,19 @@ elif menu == "🔍 Analisis EDA":
         with tab1:
             st.markdown("<h3 style='color: #495057; margin-bottom: 1.5rem;'>👤 Distribusi Variabel Demografis</h3>", unsafe_allow_html=True)
             
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Distribusi Sekolah Responden**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            school_palette = sns.color_palette("Set2", n_colors=len(df_eda['school'].unique()))
+            sns.countplot(y='school', data=df_eda, order=df_eda['school'].value_counts().index, 
+                         ax=ax, palette=school_palette)
+            ax.set_title('Distribusi Sekolah Responden', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Sekolah', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
             c1, c2 = st.columns(2)
             
             with c1:
@@ -671,23 +687,38 @@ elif menu == "🔍 Analisis EDA":
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
-            
-            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Distribusi Sekolah**")
-            fig, ax = plt.subplots(figsize=(12, 5))
-            school_palette = sns.color_palette("Set2", n_colors=len(df_eda['school'].unique()))
-            sns.countplot(y='school', data=df_eda, order=df_eda['school'].value_counts().index, 
-                         ax=ax, palette=school_palette)
-            ax.set_title('Distribusi Sekolah Responden', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
-            ax.set_ylabel('Sekolah', fontsize=11, weight='500')
-            st.pyplot(fig)
-            plt.close()
-            st.markdown("</div>", unsafe_allow_html=True)
         
         # 2. FINANSIAL
         with tab2:
             st.markdown("<h3 style='color: #495057; margin-bottom: 1.5rem;'>💰 Analisis Pola Keuangan & Pengeluaran</h3>", unsafe_allow_html=True)
+            
+            c1, c2 = st.columns(2)
+            
+            with c1:
+                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+                st.write("**Distribusi Uang Saku Bulanan**")
+                fig, ax = plt.subplots(figsize=(10, 4))
+                sns.histplot(df_eda['monthly_allowance'], bins=20, kde=True, ax=ax, color='#10b981')
+                ax.set_title('Distribusi Uang Saku Bulanan', fontsize=13, weight='600', pad=15)
+                ax.set_xlabel('Uang Saku (Rp)', fontsize=11, weight='500')
+                ax.set_ylabel('Jumlah Siswa', fontsize=11, weight='500')
+                ax.ticklabel_format(style='plain', axis='x')
+                st.pyplot(fig)
+                plt.close()
+                st.markdown("</div>", unsafe_allow_html=True)
+            
+            with c2:
+                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+                st.write("**Distribusi Total Pengeluaran**")
+                fig, ax = plt.subplots(figsize=(10, 4))
+                sns.histplot(df_eda['monthly_total_spending'], bins=20, kde=True, ax=ax, color='#f59e0b')
+                ax.set_title('Distribusi Total Pengeluaran Bulanan', fontsize=13, weight='600', pad=15)
+                ax.set_xlabel('Pengeluaran (Rp)', fontsize=11, weight='500')
+                ax.set_ylabel('Jumlah Siswa', fontsize=11, weight='500')
+                ax.ticklabel_format(style='plain', axis='x')
+                st.pyplot(fig)
+                plt.close()
+                st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
             st.write("**Distribusi Status Keuangan**")
@@ -702,34 +733,6 @@ elif menu == "🔍 Analisis EDA":
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
-            
-            c1, c2 = st.columns(2)
-            
-            with c1:
-                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-                st.write("**Distribusi Uang Saku Bulanan**")
-                fig, ax = plt.subplots(figsize=(10, 4))
-                sns.histplot(df_eda['monthly_allowance'], bins=20, kde=True, ax=ax, color='#10b981')
-                ax.set_title('Uang Saku Bulanan', fontsize=13, weight='600', pad=15)
-                ax.set_xlabel('Uang Saku (Rp)', fontsize=11, weight='500')
-                ax.set_ylabel('Jumlah Siswa', fontsize=11, weight='500')
-                ax.ticklabel_format(style='plain', axis='x')
-                st.pyplot(fig)
-                plt.close()
-                st.markdown("</div>", unsafe_allow_html=True)
-            
-            with c2:
-                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-                st.write("**Distribusi Total Pengeluaran**")
-                fig, ax = plt.subplots(figsize=(10, 4))
-                sns.histplot(df_eda['monthly_total_spending'], bins=20, kde=True, ax=ax, color='#f59e0b')
-                ax.set_title('Total Pengeluaran Bulanan', fontsize=13, weight='600', pad=15)
-                ax.set_xlabel('Pengeluaran (Rp)', fontsize=11, weight='500')
-                ax.set_ylabel('Jumlah Siswa', fontsize=11, weight='500')
-                ax.ticklabel_format(style='plain', axis='x')
-                st.pyplot(fig)
-                plt.close()
-                st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
             st.write("**Rasio Pengeluaran Terhadap Uang Saku**")
@@ -747,66 +750,34 @@ elif menu == "🔍 Analisis EDA":
             st.markdown("<h3 style='color: #495057; margin-bottom: 1.5rem;'>📱 Pengaruh Teman Sebaya dan Media Sosial</h3>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Top 10 Platform Media Sosial**")
+            st.write("**Pengaruh Teman dalam Pengambilan Keputusan**")
             fig, ax = plt.subplots(figsize=(12, 5))
-            social_media_counts = df_eda['most_used_social_media'].value_counts().head(10)
-            sns.barplot(x=social_media_counts.values, y=social_media_counts.index, ax=ax, 
-                       palette='viridis')
-            ax.set_title('Top 10 Platform Media Sosial', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah Pengguna', fontsize=11, weight='500')
-            ax.set_ylabel('Platform', fontsize=11, weight='500')
+            peer_order = df_eda['Peer_influance_decision'].value_counts().index
+            peer_palette = sns.light_palette("#f59e0b", n_colors=len(peer_order), reverse=True)
+            sns.countplot(y='Peer_influance_decision', data=df_eda, 
+                         order=peer_order, 
+                         ax=ax, palette=peer_palette)
+            ax.set_title('Pengaruh Teman dalam Pengambilan Keputusan', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Tingkat Pengaruh', fontsize=11, weight='500')
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Durasi Penggunaan Media Sosial Per Hari**")
+            st.write("**Rasa Takut Ditolak Jika Tidak Mengikuti Tren**")
             fig, ax = plt.subplots(figsize=(12, 5))
-            duration_order = df_eda['daily_social_media_hours'].value_counts().index
-            duration_palette = sns.light_palette("#3b82f6", n_colors=len(duration_order), reverse=True)
-            sns.countplot(y='daily_social_media_hours', data=df_eda, 
-                         order=duration_order, 
-                         ax=ax, palette=duration_palette)
-            ax.set_title('Rata-rata Penggunaan Media Sosial Per Hari', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah Siswa', fontsize=11, weight='500')
-            ax.set_ylabel('Durasi', fontsize=11, weight='500')
+            fear_order = df_eda['fear_of_rejection'].value_counts().index
+            fear_palette = sns.light_palette("#ef4444", n_colors=len(fear_order), reverse=True)
+            sns.countplot(y='fear_of_rejection', data=df_eda, 
+                         order=fear_order, 
+                         ax=ax, palette=fear_palette)
+            ax.set_title('Rasa Takut Ditolak Jika Tidak Mengikuti Tren', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Tingkat Ketakutan', fontsize=11, weight='500')
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
-            
-            c1, c2 = st.columns(2)
-            
-            with c1:
-                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-                st.write("**Pengaruh Teman dalam Keputusan**")
-                fig, ax = plt.subplots(figsize=(10, 5))
-                peer_order = df_eda['Peer_influance_decision'].value_counts().index
-                peer_palette = sns.light_palette("#f59e0b", n_colors=len(peer_order), reverse=True)
-                sns.countplot(y='Peer_influance_decision', data=df_eda, 
-                             order=peer_order, 
-                             ax=ax, palette=peer_palette)
-                ax.set_title('Pengaruh Teman dalam Pengambilan Keputusan', fontsize=11, weight='600', pad=12)
-                ax.set_xlabel('Jumlah', fontsize=10, weight='500')
-                ax.set_ylabel('Tingkat Pengaruh', fontsize=10, weight='500')
-                st.pyplot(fig)
-                plt.close()
-                st.markdown("</div>", unsafe_allow_html=True)
-            
-            with c2:
-                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-                st.write("**Takut Ditolak Jika Tidak Ikut Tren**")
-                fig, ax = plt.subplots(figsize=(10, 5))
-                fear_order = df_eda['fear_of_rejection'].value_counts().index
-                fear_palette = sns.light_palette("#ef4444", n_colors=len(fear_order), reverse=True)
-                sns.countplot(y='fear_of_rejection', data=df_eda, 
-                             order=fear_order, 
-                             ax=ax, palette=fear_palette)
-                ax.set_title('Rasa Takut Ditolak dalam Pertemanan', fontsize=11, weight='600', pad=12)
-                ax.set_xlabel('Jumlah', fontsize=10, weight='500')
-                ax.set_ylabel('Tingkat Ketakutan', fontsize=10, weight='500')
-                st.pyplot(fig)
-                plt.close()
-                st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
             st.write("**Frekuensi Pembelian Karena Pengaruh Teman**")
@@ -816,9 +787,37 @@ elif menu == "🔍 Analisis EDA":
             sns.countplot(y='peer_influenced_buying', data=df_eda, 
                          order=buying_order, 
                          ax=ax, palette=buying_palette)
-            ax.set_title('Pembelian Karena Dipengaruhi Teman', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah Siswa', fontsize=11, weight='500')
+            ax.set_title('Frekuensi Pembelian Karena Pengaruh Teman', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
             ax.set_ylabel('Frekuensi', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Platform Media Sosial yang Paling Sering Digunakan**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            social_media_counts = df_eda['most_used_social_media'].value_counts().head(10)
+            sns.barplot(x=social_media_counts.values, y=social_media_counts.index, ax=ax, 
+                       palette='viridis')
+            ax.set_title('Platform Media Sosial yang Paling Sering Digunakan', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah Pengguna', fontsize=11, weight='500')
+            ax.set_ylabel('Platform Media Sosial', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Rata-rata Penggunaan Media Sosial Per Hari**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            duration_order = df_eda['daily_social_media_hours'].value_counts().index
+            duration_palette = sns.light_palette("#3b82f6", n_colors=len(duration_order), reverse=True)
+            sns.countplot(y='daily_social_media_hours', data=df_eda, 
+                         order=duration_order, 
+                         ax=ax, palette=duration_palette)
+            ax.set_title('Rata-rata Penggunaan Media Sosial Per Hari', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Durasi', fontsize=11, weight='500')
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
@@ -831,8 +830,8 @@ elif menu == "🔍 Analisis EDA":
             sns.countplot(y='influencer_impact', data=df_eda, 
                          order=influencer_order, 
                          ax=ax, palette=influencer_palette)
-            ax.set_title('Dampak Influencer pada Pilihan Gaya Hidup', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah Siswa', fontsize=11, weight='500')
+            ax.set_title('Pengaruh Influencer Terhadap Gaya Hidup', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
             ax.set_ylabel('Tingkat Pengaruh', fontsize=11, weight='500')
             st.pyplot(fig)
             plt.close()
@@ -843,55 +842,219 @@ elif menu == "🔍 Analisis EDA":
             st.markdown("<h3 style='color: #495057; margin-bottom: 1.5rem;'>🔗 Analisis Hubungan Antar Variabel</h3>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Hubungan Uang Saku dan Total Pengeluaran**")
+            st.write("**Hubungan Antara Uang Saku dan Total Pengeluaran**")
             fig, ax = plt.subplots(figsize=(12, 5))
             sns.scatterplot(x='monthly_allowance', y='monthly_total_spending', data=df_eda, 
                            ax=ax, alpha=0.6, color='#3b82f6', s=60)
-            ax.set_title('Korelasi Uang Saku dengan Pengeluaran', fontsize=13, weight='600', pad=15)
+            ax.set_title('Hubungan Antara Uang Saku dan Total Pengeluaran', fontsize=13, weight='600', pad=15)
             ax.set_xlabel('Uang Saku Bulanan (Rp)', fontsize=11, weight='500')
-            ax.set_ylabel('Total Pengeluaran (Rp)', fontsize=11, weight='500')
+            ax.set_ylabel('Total Pengeluaran Bulanan (Rp)', fontsize=11, weight='500')
             ax.ticklabel_format(style='plain', axis='both')
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Pengaruh Teman Berdasarkan Gender**")
-            fig, ax = plt.subplots(figsize=(14, 5))
-            sns.countplot(y='Peer_influance_decision', hue='gender', data=df_eda, ax=ax, 
-                         palette=['#6366f1', '#ec4899'])
-            ax.set_title('Pengaruh Teman dalam Pengambilan Keputusan Berdasarkan Gender', 
-                        fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah Siswa', fontsize=11, weight='500')
-            ax.set_ylabel('Tingkat Pengaruh', fontsize=11, weight='500')
-            ax.legend(title='Gender', fontsize=10)
+            st.write("**Hubungan Antara Gender dan Pengaruh Teman**")
+            # Menggunakan stacked bar chart dengan persentase
+            col_gender = 'gender'
+            col_peer = 'Peer_influance_decision'
+            
+            # Atur Urutan Kategori (Ordinal) agar grafik bercerita dengan logis
+            order_peer = ['Tidak Sama Sekali', 'Sedikit', 'Cukup', 'Banyak', 'Sangat Banyak']
+            
+            # Filter kategori
+            valid_peer = [x for x in order_peer if x in df_eda[col_peer].unique()]
+            
+            df_plot = df_eda.copy()
+            df_plot[col_peer] = pd.Categorical(df_plot[col_peer], categories=valid_peer, ordered=True)
+            
+            # Buat Tabel Kontingensi (Crosstab)
+            ct_counts = pd.crosstab(df_plot[col_gender], df_plot[col_peer])
+            
+            # Tabel untuk persentase (untuk visualisasi bar 100%)
+            ct_pct = pd.crosstab(df_plot[col_gender], df_plot[col_peer], normalize='index') * 100
+            
+            # Plotting
+            colors = sns.color_palette("viridis", n_colors=len(ct_pct.columns))
+            fig, ax = plt.subplots(figsize=(14, 6))
+            ct_pct.plot(kind='barh', stacked=True, color=colors, ax=ax, width=0.7, edgecolor='black')
+            
+            # Menambahkan Label Gabungan (Persen % / Jumlah)
+            for i, c in enumerate(ax.containers):
+                # Ambil jumlah orang untuk kategori Peer Influence ke-i
+                counts = ct_counts.iloc[:, i]
+                
+                labels = []
+                for pct, count in zip(c.datavalues, counts):
+                    # Label hanya muncul jika proporsi > 3% agar tidak tumpang tindih
+                    if pct > 3:
+                        labels.append(f"{pct:.0f}%\n({count})")
+                    else:
+                        labels.append("")
+                
+                ax.bar_label(
+                    c,
+                    labels=labels,
+                    label_type='center',
+                    color='white',
+                    fontsize=10,
+                    fontweight='bold'
+                )
+            
+            # Judul & Label
+            ax.set_title('Proporsi Tingkat Pengaruh Teman Berdasarkan Gender\n(Persentase % / Jumlah Orang)',
+                      fontsize=13, fontweight='600', pad=15)
+            ax.set_xlabel('Proporsi Responden (%)', fontsize=11, fontweight='500')
+            ax.set_ylabel('Gender', fontsize=11, fontweight='500')
+            
+            # Mengatur Sumbu X menjadi Persen
+            ax.xaxis.set_major_formatter(PercentFormatter())
+            
+            ax.legend(title='Pengaruh Teman', bbox_to_anchor=(1.02, 1), loc='upper left')
+            ax.grid(axis='x', linestyle='--', alpha=0.3)
+            
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Rasa Takut Ditolak Berdasarkan Usia**")
-            fig, ax = plt.subplots(figsize=(14, 5))
-            sns.countplot(y='fear_of_rejection', hue='age', data=df_eda, ax=ax, palette='Set3')
-            ax.set_title('Rasa Takut Ditolak Berdasarkan Usia', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
-            ax.set_ylabel('Tingkat Ketakutan', fontsize=11, weight='500')
-            ax.legend(title='Usia', fontsize=9, ncol=3)
-            st.pyplot(fig)
-            plt.close()
+            st.write("**Hubungan Antara Usia dan Rasa Takut Ditolak**")
+            col_fear = 'fear_of_rejection'
+            col_usia = 'age'
+            
+            if col_fear in df_eda.columns and col_usia in df_eda.columns:
+                # Pembersihan & Filter Data Usia (SMA: 14-20)
+                df_plot = df_eda.copy()
+                df_plot[col_usia] = pd.to_numeric(df_plot[col_usia], errors='coerce')
+                df_clean = df_plot[(df_plot[col_usia] >= 14) & (df_plot[col_usia] <= 20)].copy()
+                df_clean[col_usia] = df_clean[col_usia].astype(int)
+                
+                # Atur Urutan Kategori (Ordinal) agar grafik bercerita dengan logis
+                order_fear = ['Tidak Takut Sama Sekali','Sedikit Takut', 'Netral', 'Cukup Takut', 'Takut', 'Sangat Takut']
+                
+                # Filter kategori
+                valid_fear = [x for x in order_fear if x in df_clean[col_fear].unique()]
+                df_clean[col_fear] = pd.Categorical(df_clean[col_fear], categories=valid_fear, ordered=True)
+                
+                # Buat Tabel Kontingensi (Crosstab)
+                ct_counts = pd.crosstab(df_clean[col_fear], df_clean[col_usia])
+                
+                # Tabel untuk persentase (untuk visualisasi bar 100%)
+                ct_pct = pd.crosstab(df_clean[col_fear], df_clean[col_usia], normalize='index') * 100
+                
+                # Plotting
+                colors = sns.color_palette("Spectral", n_colors=len(ct_pct.columns))
+                fig, ax = plt.subplots(figsize=(15, 7))
+                ct_pct.plot(kind='barh', stacked=True, color=colors, ax=ax, width=0.8, edgecolor='black')
+                
+                # Menambahkan Label Gabungan (Persen % / Jumlah)
+                for i, c in enumerate(ax.containers):
+                    # Ambil kolom jumlah yang sesuai dengan kelompok usia saat ini
+                    counts = ct_counts.iloc[:, i]
+                    
+                    labels = []
+                    for pct, count in zip(c.datavalues, counts):
+                        # Label hanya muncul jika proporsi > 3% agar tidak tumpang tindih
+                        if pct > 3:
+                            labels.append(f"{pct:.0f}% / {count}")
+                        else:
+                            labels.append("")
+                    
+                    ax.bar_label(
+                        c,
+                        labels=labels,
+                        label_type='center',
+                        color='black', # Hitam lebih kontras dengan palet Spectral yang terang
+                        fontsize=9,
+                        fontweight='bold'
+                    )
+                
+                # Judul & Label
+                ax.set_title('Proporsi Rasa Takut Ditolak Berdasarkan Usia\n(Persentase % / Jumlah Orang)',
+                          fontsize=13, fontweight='600', pad=15)
+                ax.set_xlabel('Proporsi Responden (%)', fontsize=11, fontweight='500')
+                ax.set_ylabel('Tingkat Ketakutan', fontsize=11, fontweight='500')
+                
+                # Mengatur Sumbu X menjadi Persen
+                ax.xaxis.set_major_formatter(PercentFormatter())
+                
+                ax.legend(title='Usia (Tahun)', bbox_to_anchor=(1.02, 1), loc='upper left')
+                ax.grid(axis='x', linestyle='--', alpha=0.3)
+                
+                st.pyplot(fig)
+                plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Pengaruh Influencer Berdasarkan Durasi Media Sosial**")
-            fig, ax = plt.subplots(figsize=(14, 5))
-            sns.countplot(y='daily_social_media_hours', hue='influencer_impact', data=df_eda, ax=ax, 
-                         palette='husl')
-            ax.set_title('Pengaruh Influencer Berdasarkan Lama Penggunaan Media Sosial', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
-            ax.set_ylabel('Durasi Penggunaan Media Sosial', fontsize=11, weight='500')
-            ax.legend(title='Pengaruh Influencer', fontsize=9, ncol=2)
-            st.pyplot(fig)
-            plt.close()
+            st.write("**Hubungan Antara Penggunaan Media Sosial dan Pengaruh Influencer**")
+            col_durasi = 'daily_social_media_hours'
+            col_influencer = 'influencer_impact'
+            
+            if col_durasi in df_eda.columns and col_influencer in df_eda.columns:
+                df_plot = df_eda.copy()
+                df_plot[col_durasi] = df_plot[col_durasi].astype(str).str.replace('–', '-', regex=False)
+                
+                # Atur Urutan Kategori (Ordinal) agar grafik bercerita dengan logis
+                order_durasi = ['< 1 jam per hari', '1-2 jam per hari', '3-4 jam per hari', '5-6 jam per hari', '> 6 jam per hari']
+                order_influencer = ['Tidak Sama Sekali', 'Sedikit', 'Cukup', 'Banyak', 'Sangat Banyak']
+                
+                # Filter kategori
+                valid_durasi = [x for x in order_durasi if x in df_plot[col_durasi].unique()]
+                valid_inf = [x for x in order_influencer if x in df_plot[col_influencer].unique()]
+                
+                df_plot[col_durasi] = pd.Categorical(df_plot[col_durasi], categories=valid_durasi, ordered=True)
+                df_plot[col_influencer] = pd.Categorical(df_plot[col_influencer], categories=valid_inf, ordered=True)
+                
+                # Buat Tabel Kontingensi (Crosstab)
+                # Tabel untuk jumlah riil (untuk label)
+                ct_counts = pd.crosstab(df_plot[col_durasi], df_plot[col_influencer])
+                
+                # Tabel untuk persentase (untuk visualisasi bar 100%)
+                ct_pct = pd.crosstab(df_plot[col_durasi], df_plot[col_influencer], normalize='index') * 100
+                
+                # Plotting
+                colors = sns.color_palette("viridis", n_colors=len(ct_pct.columns))
+                fig, ax = plt.subplots(figsize=(15, 7))
+                ct_pct.plot(kind='bar', stacked=True, color=colors, ax=ax, width=0.85, edgecolor='black')
+                
+                # Menambahkan Label Gabungan (Persen % / Jumlah)
+                for i, c in enumerate(ax.containers):
+                    # Ambil kolom jumlah yang sesuai dengan warna saat ini
+                    counts = ct_counts.iloc[:, i]
+                    
+                    labels = []
+                    for pct, count in zip(c.datavalues, counts):
+                        # Label hanya muncul jika proporsi > 3% agar tidak tumpang tindih
+                        if pct > 3:
+                            label_text = f"{pct:.0f}% / {count}"
+                        else:
+                            label_text = ""
+                        labels.append(label_text)
+                    
+                    ax.bar_label(
+                        c,
+                        labels=labels,
+                        label_type='center',
+                        color='white',
+                        fontsize=9,
+                        fontweight='bold'
+                    )
+                
+                # Judul & Label
+                ax.set_title('Proporsi Pengaruh Lama Penggunaan Sosial Media Terhadap Dampak Influencer dalam Kehidupan Sehari-hari (Persen / Jumlah Orang)', fontsize=13, fontweight='600', pad=15)
+                ax.set_xlabel('Durasi Penggunaan Media Sosial', fontsize=11, fontweight='500')
+                ax.set_ylabel('Proporsi Responden (%)', fontsize=11, fontweight='500')
+                ax.set_xticks(range(len(valid_durasi)))
+                ax.set_xticklabels(valid_durasi, rotation=0)
+                
+                # Mengatur Sumbu Y menjadi Persen
+                ax.yaxis.set_major_formatter(PercentFormatter())
+                ax.legend(title='Dampak Influencer', bbox_to_anchor=(1, 1))
+                ax.grid(axis='y', linestyle='--', alpha=0.3)
+                
+                st.pyplot(fig)
+                plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
@@ -909,40 +1072,204 @@ elif menu == "🔍 Analisis EDA":
             st.markdown("<h4 style='color: #495057; margin: 2rem 0 1rem 0;'>Hubungan Tekanan Sosial dan Perilaku Konsumtif</h4>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Pengaruh Teman dan Pembelian Impulsif**")
-            fig, ax = plt.subplots(figsize=(14, 5))
-            sns.countplot(y='freq_impulsive_buying', hue='Peer_influance_decision', data=df_eda, ax=ax, 
-                         palette='muted')
-            ax.set_title('Hubungan Antara Pengaruh Teman dan Pembelian Impulsif', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
-            ax.set_ylabel('Frekuensi Pembelian Impulsif', fontsize=11, weight='500')
-            ax.legend(title='Pengaruh Teman', fontsize=9, ncol=2)
+            st.write("**Hubungan Antara Tekanan Teman dan Pembelian Impulsif**")
+            col_impulsive = 'freq_impulsive_buying'
+            col_peer = 'Peer_influance_decision'
+            
+            # Atur Urutan Kategori (Ordinal) agar grafik bercerita dengan logis
+            order_impulsive = ['Tidak Pernah', 'Jarang', 'Kadang-Kadang', 'Sering', 'Sangat Sering']
+            order_peer = ['Tidak Sama Sekali', 'Sedikit', 'Cukup', 'Banyak', 'Sangat Banyak']
+            
+            # Filter kategori
+            valid_imp = [x for x in order_impulsive if x in df_eda[col_impulsive].unique()]
+            valid_peer = [x for x in order_peer if x in df_eda[col_peer].unique()]
+            
+            df_plot = df_eda.copy()
+            df_plot[col_impulsive] = pd.Categorical(df_plot[col_impulsive], categories=valid_imp, ordered=True)
+            df_plot[col_peer] = pd.Categorical(df_plot[col_peer], categories=valid_peer, ordered=True)
+            
+            # Buat Tabel Kontingensi (Crosstab)
+            ct_counts = pd.crosstab(df_plot[col_impulsive], df_plot[col_peer])
+            
+            # Tabel untuk persentase (untuk visualisasi bar 100%)
+            ct_pct = pd.crosstab(df_plot[col_impulsive], df_plot[col_peer], normalize='index') * 100
+            
+            # Plotting
+            colors = sns.color_palette("viridis", n_colors=len(ct_pct.columns))
+            fig, ax = plt.subplots(figsize=(14, 6))
+            ct_pct.plot(kind='bar', stacked=True, color=colors, ax=ax, width=0.8, edgecolor='black')
+            
+            # Menambahkan Label Gabungan (Persen % / Jumlah)
+            for i, c in enumerate(ax.containers):
+                # Ambil kolom jumlah yang sesuai dengan kategori 'Peer Influence' saat ini
+                counts = ct_counts.iloc[:, i]
+                
+                labels = []
+                for pct, count in zip(c.datavalues, counts):
+                    # Hanya tampilkan label jika persentase > 3% agar tidak tumpang tindih
+                    if pct > 3:
+                        labels.append(f"{pct:.0f}%\n({count})")
+                    else:
+                        labels.append("")
+                
+                # Tempel label di tengah setiap segmen bar
+                ax.bar_label(
+                    c,
+                    labels=labels,
+                    label_type='center',
+                    color='white',
+                    fontsize=9,
+                    fontweight='bold'
+                )
+            
+            # Judul & Label
+            ax.set_title('Proporsi Pengaruh Teman terhadap Frekuensi Pembelian Impulsif\n(Persentase % / Jumlah Orang)',
+                      fontsize=13, fontweight='600', pad=15)
+            ax.set_xlabel('Frekuensi Pembelian Impulsif', fontsize=11, fontweight='500')
+            ax.set_ylabel('Proporsi Responden (%)', fontsize=11, fontweight='500')
+            
+            # Mengatur Sumbu Y menjadi Persen
+            ax.yaxis.set_major_formatter(PercentFormatter())
+            
+            ax.legend(title='Pengaruh Teman', bbox_to_anchor=(1.02, 1), loc='upper left')
+            ax.grid(axis='y', linestyle='--', alpha=0.3)
+            ax.set_xticks(range(len(valid_imp)))
+            ax.set_xticklabels(valid_imp, rotation=0)
+            
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Takut Ditolak dan Kebutuhan Mengikuti Tren**")
-            fig, ax = plt.subplots(figsize=(14, 5))
-            sns.countplot(y='attitude_need_trend_acceptance', hue='fear_of_rejection', data=df_eda, ax=ax, 
-                         palette='Spectral')
-            ax.set_title('Hubungan Antara Rasa Takut Ditolak dan Pembelian Barang Trend', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
-            ax.set_ylabel('Tingkat Persetujuan', fontsize=11, weight='500')
-            ax.legend(title='Rasa Takut Ditolak', fontsize=9, ncol=2)
+            st.write("**Hubungan Antara Rasa Takut Ditolak dan Pembelian untuk Diterima**")
+            col_y = 'fear_of_rejection'
+            col_hue = 'attitude_need_trend_acceptance'
+            
+            # Atur Urutan Kategori (Ordinal) agar grafik bercerita dengan logis
+            order_hue = ['Sangat Tidak Setuju', 'Tidak Setuju', 'Netral', 'Setuju', 'Sangat Setuju']
+            order_y = ['Tidak Takut Sama Sekali', 'Sedikit Takut', 'Cukup Takut', 'Takut', 'Sangat Takut']
+            
+            # Filter kategori
+            valid_y = [x for x in order_y if x in df_eda[col_y].unique()]
+            valid_hue = [x for x in order_hue if x in df_eda[col_hue].unique()]
+            
+            df_plot = df_eda.copy()
+            df_plot[col_y] = pd.Categorical(df_plot[col_y], categories=valid_y, ordered=True)
+            df_plot[col_hue] = pd.Categorical(df_plot[col_hue], categories=valid_hue, ordered=True)
+            
+            # Buat Tabel Kontingensi (Crosstab)
+            # Tabel untuk jumlah riil (untuk label)
+            ct_counts = pd.crosstab(df_plot[col_y], df_plot[col_hue])
+            
+            # Tabel untuk persentase (untuk visualisasi bar 100%)
+            ct_pct = pd.crosstab(df_plot[col_y], df_plot[col_hue], normalize='index') * 100
+            
+            # Plotting
+            colors = sns.color_palette("viridis", n_colors=len(ct_pct.columns))
+            fig, ax = plt.subplots(figsize=(15, 7))
+            ct_pct.plot(kind='barh', stacked=True, color=colors, ax=ax, width=0.8, edgecolor='black')
+            
+            # Menambahkan Label Gabungan (Persen % / Jumlah)
+            for i, c in enumerate(ax.containers):
+                # Ambil kolom jumlah yang sesuai dengan kelompok (hue) saat ini
+                counts = ct_counts.iloc[:, i]
+                
+                labels = []
+                for pct, count in zip(c.datavalues, counts):
+                    # Label hanya muncul jika proporsi > 3% agar tidak tumpang tindih
+                    if pct > 3:
+                        labels.append(f"{pct:.0f}% / {count}")
+                    else:
+                        labels.append("")
+                
+                ax.bar_label(
+                    c,
+                    labels=labels,
+                    label_type='center',
+                    color='white',
+                    fontsize=9,
+                    fontweight='bold'
+                )
+            
+            # Judul & Label
+            ax.set_title('Proporsi Hubungan Rasa Takut Ditolak terhadap Keinginan Mengikuti Tren\n(Persen / Jumlah Responden)',
+                      fontsize=13, fontweight='600', pad=15)
+            ax.set_xlabel('Proporsi Responden (%)', fontsize=11, fontweight='500')
+            ax.set_ylabel('Tingkat Rasa Takut', fontsize=11, fontweight='500')
+            
+            # Mengatur Sumbu X menjadi Persen
+            ax.xaxis.set_major_formatter(PercentFormatter())
+            
+            ax.legend(title='Keinginan Mengikuti Tren', bbox_to_anchor=(1.02, 1), loc='upper left')
+            ax.grid(axis='x', linestyle='--', alpha=0.3)
+            
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
             
             st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Pengaruh Influencer dan Pembelian Online**")
-            fig, ax = plt.subplots(figsize=(14, 5))
-            sns.countplot(y='online_shopping_frequency', hue='influencer_impact', data=df_eda, ax=ax, 
-                         palette='Set2')
-            ax.set_title('Hubungan Antara Pengaruh Influencer dan Pembelian Online', fontsize=13, weight='600', pad=15)
-            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
-            ax.set_ylabel('Frekuensi Pembelian Online', fontsize=11, weight='500')
-            ax.legend(title='Pengaruh Influencer', fontsize=9, ncol=2)
+            st.write("**Hubungan Antara Pengaruh Influencer dan Pembelian Online**")
+            col_y = 'online_shopping_frequency'
+            col_hue = 'influencer_impact'
+            
+            # Atur Urutan Kategori (Ordinal) agar grafik bercerita dengan logis
+            order_y = ['0 kali / Tidak pernah', '1-2 kali per bulan', '3-4 kali per bulan', '5-6 kali per bulan', '7 kali atau lebih']
+            order_hue = ['Tidak Sama Sekali', 'Sedikit', 'Cukup', 'Banyak', 'Sangat Banyak']
+            
+            # Filter kategori
+            valid_y = [x for x in order_y if x in df_eda[col_y].unique()]
+            valid_hue = [x for x in order_hue if x in df_eda[col_hue].unique()]
+            
+            df_plot = df_eda.copy()
+            df_plot[col_y] = pd.Categorical(df_plot[col_y], categories=valid_y, ordered=True)
+            df_plot[col_hue] = pd.Categorical(df_plot[col_hue], categories=valid_hue, ordered=True)
+            
+            # Buat Tabel Kontingensi (Crosstab)
+            # Tabel untuk jumlah riil (untuk label)
+            ct_counts = pd.crosstab(df_plot[col_y], df_plot[col_hue])
+            
+            # Tabel untuk persentase (untuk visualisasi bar 100%)
+            ct_pct = pd.crosstab(df_plot[col_y], df_plot[col_hue], normalize='index') * 100
+            
+            # Plotting
+            colors = sns.color_palette("viridis", n_colors=len(ct_pct.columns))
+            fig, ax = plt.subplots(figsize=(15, 7))
+            ct_pct.plot(kind='barh', stacked=True, color=colors, ax=ax, width=0.8, edgecolor='black')
+            
+            # Menambahkan Label Gabungan (Persen % / Jumlah)
+            for i, c in enumerate(ax.containers):
+                # Ambil nilai count yang sesuai untuk kolom hue ke-i
+                counts = ct_counts.iloc[:, i]
+                
+                labels = []
+                for pct, count in zip(c.datavalues, counts):
+                    # Label hanya muncul jika proporsi > 3% agar tidak tumpang tindih
+                    if pct > 3:
+                        labels.append(f"{pct:.0f}% / {count}")
+                    else:
+                        labels.append("")
+                
+                ax.bar_label(
+                    c,
+                    labels=labels,
+                    label_type='center',
+                    color='white',
+                    fontsize=9,
+                    fontweight='bold'
+                )
+            
+            # Judul & Label
+            ax.set_title('Proporsi Dampak Influencer terhadap Frekuensi Pembelian Online\n(Persentase % / Jumlah Orang)',
+                      fontsize=13, fontweight='600', pad=15)
+            ax.set_xlabel('Proporsi Responden (%)', fontsize=11, fontweight='500')
+            ax.set_ylabel('Frekuensi Pembelian Online', fontsize=11, fontweight='500')
+            
+            # Mengubah sumbu X menjadi format persen
+            ax.xaxis.set_major_formatter(PercentFormatter())
+            
+            ax.legend(title='Dampak Influencer', bbox_to_anchor=(1.02, 1), loc='upper left')
+            ax.grid(axis='x', linestyle='--', alpha=0.3)
+            
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
@@ -1251,67 +1578,113 @@ elif menu == "🤖 Prediksi AI":
 elif menu == "📈 Evaluasi Model":
     st.markdown("""
         <div class='main-header'>
-            <h1>Evaluasi Kinerja Model</h1>
-            <p>Analisis Performa Model Machine Learning Secara Real-Time</p>
+            <h1>Evaluasi Model Machine Learning</h1>
+            <p>Performa Model yang Digunakan dalam Sistem Prediksi</p>
         </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("""
-        <div class='info-card'>
-            <p style='margin: 0; color: #495057; line-height: 1.7;'>
-                <strong>Metode Evaluasi:</strong> Data dibagi 80% training dan 20% testing<br>
-                <strong>Metrik:</strong> 
-                • <strong>R²</strong> = seberapa baik model menjelaskan data (mendekati 1 lebih baik)
-                • <strong>MAE</strong> = rata-rata kesalahan absolut (Rp)
-                • <strong>RMSE</strong> = akar kuadrat rata-rata kesalahan kuadrat (memberikan bobot lebih pada kesalahan besar)
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    if df_raw is not None and models is not None:
-        with st.spinner("Menghitung akurasi model..."):
-            X, y_cls, y_reg = preprocess_data_for_eval(df_raw)
-            X_train, X_test, y_cls_train, y_cls_test = train_test_split(X, y_cls, test_size=0.2, random_state=42)
-            _, _, y_reg_train, y_reg_test = train_test_split(X, y_reg, test_size=0.2, random_state=42)
-            
-            # Classification metrics
-            y_pred_cls = models['klasifikasi'].predict(X_test)
-            acc_cls = accuracy_score(y_cls_test, y_pred_cls)
-            
-            # Regression metrics
-            y_pred_reg = models['regresi'].predict(X_test)
-            r2_reg = r2_score(y_reg_test, y_pred_reg)
-            mae_reg = mean_absolute_error(y_reg_test, y_pred_reg)
-            rmse_reg = np.sqrt(mean_squared_error(y_reg_test, y_pred_reg))
+    if models is not None and 'metrics' in models:
+        metrics = models['metrics']
         
-        t1, t2 = st.tabs(["🌲 Klasifikasi", "📈 Regresi"])
+        # Linear Regression Metrics
+        st.markdown("<h3 style='color: #495057; margin-bottom: 1.5rem;'>📊 Model Linear Regression (Prediksi Pengeluaran)</h3>", unsafe_allow_html=True)
         
-        with t1:
-            st.markdown("<h3 style='color: #495057; margin-bottom: 1rem;'>Model Klasifikasi Status Keuangan</h3>", unsafe_allow_html=True)
-            
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
             st.markdown(f"""
-                <div class='metric-card green'>
-                    <p style='margin: 0 0 0.3rem 0; font-size: 0.85rem; opacity: 0.85;'>Akurasi Keseluruhan</p>
-                    <h3>{acc_cls*100:.2f}%</h3>
+                <div class='metric-card blue'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.8;'>R-Squared</p>
+                    <h3>{metrics['linear_regression']['r2']:.4f}</h3>
                 </div>
             """, unsafe_allow_html=True)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-            st.write("**Confusion Matrix**")
-            st.caption("Matriks ini menunjukkan performa model dalam mengklasifikasikan setiap status keuangan")
-            cm = confusion_matrix(y_cls_test, y_pred_cls)
-            fig, ax = plt.subplots(figsize=(10, 7))
+        
+        with col2:
+            st.markdown(f"""
+                <div class='metric-card orange'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.8;'>MAE</p>
+                    <h3>Rp {metrics['linear_regression']['mae']:,.0f}</h3>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+                <div class='metric-card red'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.8;'>RMSE</p>
+                    <h3>Rp {metrics['linear_regression']['rmse']:,.0f}</h3>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        # Random Forest Regressor Metrics
+        st.markdown("<h3 style='color: #495057; margin: 2rem 0 1.5rem 0;'>🌲 Model Random Forest Regressor (Prediksi Impulsive Buying)</h3>", unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown(f"""
+                <div class='metric-card blue'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.8;'>R-Squared</p>
+                    <h3>{metrics['random_forest_regressor']['r2']:.4f}</h3>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+                <div class='metric-card orange'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.8;'>MAE</p>
+                    <h3>{metrics['random_forest_regressor']['mae']:.2f} poin</h3>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        # Random Forest Classifier Metrics
+        st.markdown("<h3 style='color: #495057; margin: 2rem 0 1.5rem 0;'>🌳 Model Random Forest Classifier (Klasifikasi Status Keuangan)</h3>", unsafe_allow_html=True)
+        
+        # Tampilkan classification report
+        class_report = metrics['random_forest_classifier']['classification_report']
+        st.write("**Classification Report:**")
+        
+        # Buat DataFrame dari classification report untuk tampilan yang lebih baik
+        report_df = pd.DataFrame(class_report).transpose()
+        st.dataframe(report_df.style.format("{:.3f}"))
+        
+        # Tampilkan confusion matrix dengan kode yang aman
+        st.write("**Confusion Matrix:**")
+        
+        # Ambil data dengan aman menggunakan .get() untuk menghindari error
+        classifier_metrics = metrics.get('random_forest_classifier', {})
+        cm = classifier_metrics.get('confusion_matrix')
+        labels = classifier_metrics.get('target_names', ['Hemat', 'Wajar', 'Boros', 'Defisit'])
+
+        if cm is not None:
+            fig, ax = plt.subplots(figsize=(8, 6))
             sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                       xticklabels=['Hemat','Wajar','Boros','Defisit'], 
-                       yticklabels=['Hemat','Wajar','Boros','Defisit'], 
-                       ax=ax, linewidths=1, linecolor='white')
-            ax.set_xlabel('Prediksi', fontsize=11, weight='500')
-            ax.set_ylabel('Aktual', fontsize=11, weight='500')
-            ax.set_title('Confusion Matrix Model Klasifikasi', fontsize=13, weight='600', pad=15)
+                        xticklabels=labels,
+                        yticklabels=labels)
+            plt.ylabel('Actual Label')
+            plt.xlabel('Predicted Label')
+            plt.title('Confusion Matrix for Financial Status Classification')
             st.pyplot(fig)
             plt.close()
-            st.markdown("</div>", unsafe_allow_html=True)
+        else:
+            st.error("❌ **Data Tidak Ditemukan**")
+            st.info("Tidak dapat menampilkan Confusion Matrix. Pastikan Anda telah menjalankan ulang file `model(5).py` untuk membuat file metrik yang lengkap.")
+            
+    else:
+        st.error("Model atau metrik evaluasi tidak ditemukan. Pastikan semua file model dan metrik ada di folder 'models'.")
+
+        
+        labels = metrics['random_forest_classifier']['target_names']
+            
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                        xticklabels=labels,
+                        yticklabels=labels)
+        plt.ylabel('Actual Label')
+        plt.xlabel('Predicted Label')
+        plt.title('Confusion Matrix for Financial Status Classification')
+        st.pyplot(fig)
+        plt.close()
+                    
+        st.markdown("</div>", unsafe_allow_html=True)
         
         with t2:
             st.markdown("<h3 style='color: #495057; margin-bottom: 1rem;'>Model Regresi Prediksi Pengeluaran</h3>", unsafe_allow_html=True)
@@ -1357,5 +1730,5 @@ elif menu == "📈 Evaluasi Model":
             st.pyplot(fig)
             plt.close()
             st.markdown("</div>", unsafe_allow_html=True)
-    else:
+else:
         st.warning("Data atau model belum tersedia untuk evaluasi.")
