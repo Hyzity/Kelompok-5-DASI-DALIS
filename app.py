@@ -1,0 +1,1361 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import joblib
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import chi2_contingency
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, r2_score, mean_absolute_error, confusion_matrix, mean_squared_error
+
+# ==========================================
+# 🎨 CUSTOM CSS STYLING
+# ==========================================
+def load_custom_css():
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    .stApp {
+        background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
+    }
+    
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+        padding: 1.5rem 1rem;
+    }
+    
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #ecf0f1;
+    }
+    
+    .custom-card {
+        background: white;
+        padding: 1.8rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin: 1rem 0;
+        border: 1px solid #e9ecef;
+        transition: all 0.2s ease;
+    }
+    
+    .custom-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+    
+    .main-header {
+        background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+        padding: 2.5rem 2rem;
+        border-radius: 16px;
+        text-align: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .main-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+    
+    .main-header p {
+        color: #f8f9fa;
+        font-size: 1.05rem;
+        margin-top: 0.75rem;
+        font-weight: 400;
+        opacity: 0.95;
+    }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        padding: 1.5rem 1.2rem;
+        border-radius: 12px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 3px 10px rgba(108, 117, 125, 0.25);
+        margin: 0.5rem 0;
+        border: none;
+    }
+    
+    .metric-card h3 {
+        font-size: 2.2rem;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: -1px;
+    }
+    
+    .metric-card p {
+        font-size: 0.875rem;
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-weight: 500;
+    }
+    
+    .metric-card.green {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
+    }
+    
+    .metric-card.blue {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        box-shadow: 0 3px 10px rgba(59, 130, 246, 0.25);
+    }
+    
+    .metric-card.orange {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        box-shadow: 0 3px 10px rgba(245, 158, 11, 0.25);
+    }
+    
+    .metric-card.red {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25);
+    }
+    
+    .stButton>button {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 2.5rem;
+        border-radius: 10px;
+        border: none;
+        font-size: 1rem;
+        box-shadow: 0 4px 10px rgba(108, 117, 125, 0.3);
+        transition: all 0.2s ease;
+        letter-spacing: 0.3px;
+    }
+    
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+        background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.5rem;
+        background: transparent;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: white;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        color: #6c757d;
+        border: 1px solid #e9ecef;
+        font-size: 0.95rem;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+        color: white;
+        border: none;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #adb5bd 0%, #868e96 100%);
+        padding: 1.2rem 1.5rem;
+        border-radius: 10px;
+        color: white;
+        margin: 1.5rem 0 1rem 0;
+        box-shadow: 0 2px 8px rgba(173, 181, 189, 0.25);
+    }
+    
+    .section-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        letter-spacing: -0.3px;
+    }
+    
+    .streamlit-expanderHeader {
+        background: rgba(255,255,255,0.15);
+        border-radius: 8px;
+        font-weight: 600;
+        color: #ecf0f1;
+        font-size: 0.95rem;
+    }
+    
+    .stProgress > div > div > div {
+        background: linear-gradient(90deg, #6c757d 0%, #495057 100%);
+    }
+    
+    .info-card {
+        background: #f8f9fa;
+        border-left: 4px solid #6c757d;
+        padding: 1.2rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    
+    .info-card.success {
+        border-left-color: #10b981;
+        background: #f0fdf4;
+    }
+    
+    .info-card.warning {
+        border-left-color: #f59e0b;
+        background: #fffbeb;
+    }
+    
+    .info-card.error {
+        border-left-color: #ef4444;
+        background: #fef2f2;
+    }
+    
+    .dataframe {
+        border-radius: 8px;
+        overflow: hidden;
+        font-size: 0.9rem;
+    }
+    
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    [data-testid="stSidebar"] .stRadio > label {
+        color: #ecf0f1 !important;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    .stNumberInput > label, .stSelectbox > label {
+        color: #ecf0f1 !important;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    h1, h2, h3 {
+        letter-spacing: -0.5px;
+    }
+    
+    .sidebar-title {
+        text-align: center;
+        padding: 1rem 0;
+        border-bottom: 2px solid rgba(236, 240, 241, 0.2);
+        margin-bottom: 1.5rem;
+    }
+    
+    .sidebar-title h1 {
+        color: white;
+        font-size: 1.6rem;
+        margin: 0;
+        font-weight: 700;
+    }
+    
+    .sidebar-title p {
+        color: rgba(236, 240, 241, 0.8);
+        font-size: 0.8rem;
+        margin-top: 0.3rem;
+        font-weight: 400;
+    }
+    
+    </style>
+    """, unsafe_allow_html=True)
+
+# ==========================================
+# 1. KONFIGURASI HALAMAN
+# ==========================================
+st.set_page_config(
+    page_title="Dashboard Gaya Hidup Siswa",
+    page_icon="🎓",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Load Custom CSS
+load_custom_css()
+
+# ==========================================
+# 2. LOAD DATA & SEMUA MODEL (CACHE)
+# ==========================================
+@st.cache_resource
+def load_models():
+    try:
+        models = {
+            'klasifikasi': joblib.load('models/model_klasifikasi_status_keuangan.joblib'),
+            'regresi': joblib.load('models/model_regresi_pengeluaran.joblib'),
+            'regresi_impulsif': joblib.load('models/model_regresi_impulsive.joblib'),
+            'kmeans': joblib.load('models/model_kmeans_clustering.joblib'),
+            'scaler': joblib.load('models/scaler_untuk_clustering.joblib')
+        }
+        return models
+    except Exception as e:
+        return None
+
+@st.cache_data
+def load_data():
+    try:
+        df = pd.read_csv('cleaned_processed_final.csv')
+        return df
+    except:
+        return None
+
+models = load_models()
+df_raw = load_data()
+
+# ==========================================
+# 3. DEFINISI MAPPING (KAMUS DATA)
+# ==========================================
+MAPPING_EDA_COLS = {
+    'Timestamp': 'Timestamp', 'Usia': 'age', 'JK': 'gender', 'Sekolah': 'school', 'Kelas': 'grade_level',
+    'Jumlah uang bulanan': 'monthly_allowance', 'Total pengeluaran dalam satu bulan': 'monthly_total_spending',
+    'Seberapa besar pengaruh teman-teman Anda dalam pengambilan keputusan sehari-hari (contohnya dalam memilih pakaian, tempat nongkrong dan barang yang ingin dibeli)?': 'Peer_influance_decision',
+    'Seberapa besar rasa takut Anda merasa ditolak dalam pertemanan jika dianggap ketinggalan tren atau tidak mengikuti gaya teman-teman Anda?': 'fear_of_rejection',
+    'Seberapa sering Anda membeli suatu barang karena diajak atau dipengaruhi oleh teman Anda, bukan karena kebutuhan pribadi?': 'peer_influenced_buying',
+    'Dalam seminggu berapa kali Anda biasanya keluar untuk nongkrong  bersama teman?': 'hangout_freq',
+    'Media sosial yang sering digunakan': 'most_used_social_media',
+    'Lama rata-rata Anda menggunakan media sosial': 'daily_social_media_hours',
+    'Seberapa besar pengaruh rekomendasi influencer terhadap pilihan belanja atau gaya hidup Anda?': 'influencer_impact',
+    'Dalam satu bulan, berapa kali Anda melakukan pembelian melalui platform belanja online seperti Shopee, Tokopedia dan Tiktok Shop?': 'online_shopping_frequency',
+    'Seberapa sering Anda makan atau membeli jajanan diluar rumah dalam seminggu?': 'freq_eating_out',
+    'Seberapa sering Anda membeli barang dalam satu bulan (termasuk jajan, nongkrong, belanja dan kebutuhan lainnya)?': 'freq_buying_general',
+    'Seberapa sering Anda membeli barang secara spontan tanpa perencanaan sebelumnya (impulsive buying)?': 'freq_impulsive_buying',
+    'Saya merasa perlu membeli barang-barang yang sedang tren agar saya dapat diterima dalam kelompok pertemanan saya': 'attitude_need_trend_acceptance',
+    'Sebagian besar uang saku saya habis karena kegiatan bersama teman, seperti nongkrong, makan diluar atau mengikuti tren lain?': 'attitude_money_spent_on_friends',
+    'Saya sering merasa terdorong untuk mencoba tempat-tempat yang sedang tren di media sosial karena banyak teman saya yang melakukannya': 'attitude_driven_by_social_trends',
+    'Saya rela mengurangi atau menghemat uang makan dan transportasi agar bisa membeli barang atau mengikuti tren yang sedang populer di sekolah': 'attitude_sacrifice_basic_needs',
+    'Frekuensi saya nongkrong di kafe atau tempat hangout tertentu meningkat karena sering diajak atau dipengaruhi oleh teman': 'attitude_hangout_increase',
+    'Status_Keuangan': 'financial_status', 'Rasio_Pengeluaran': 'spending_ratio'
+}
+
+MAPPINGS_MODEL = {
+    'freq': {'Tidak pernah': 0, 'Jarang': 1, 'Kadang-kadang': 2, 'Sering': 3, 'Sangat sering': 4},
+    'agree': {'Sangat Tidak Setuju': 1, 'Tidak Setuju': 2, 'Netral': 3, 'Setuju': 4, 'Sangat Setuju': 5},
+    'influence': {'Tidak Sama Sekali': 0, 'Sedikit': 1, 'Cukup': 2, 'Banyak': 3, 'Sangat banyak': 4},
+    'fear': {'Tidak Takut Sama Sekali': 0, 'Sedikit takut': 1, 'Cukup takut': 2, 'Takut': 3, 'Sangat takut': 4},
+    'duration': {'< 1 jam per hari': 0, '1–2 jam per hari': 1, '3–4 jam per hari': 2, '5–6 jam per hari': 3, '> 6 jam per hari': 4},
+    'hangout': {'Tidak pernah': 0, '1-2 kali per minggu': 1, '3-4 kali per minggu': 2, '5-6 kali per minggu': 3, '7 kali atau lebih': 4},
+    'online': {'Tidak pernah': 0, '1-2 kali per bulan': 1, '3-4 kali per bulan': 2, '5-6 kali per bulan': 3, '7 kali atau lebih': 4},
+    'impulsive': {'Tidak Pernah': 0, 'Jarang': 1, 'Kadang-kadang': 2, 'Sering': 3, 'Sangat Sering': 4},
+}
+
+# ==========================================
+# 4. FUNGSI PREPROCESSING REAL-TIME
+# ==========================================
+@st.cache_data
+def preprocess_data_for_eval(df_raw):
+    """Mengubah data CSV mentah menjadi format angka (X, y) untuk evaluasi."""
+    df = df_raw.rename(columns=MAPPING_EDA_COLS).copy()
+    df['age'] = df['age'].fillna(df['age'].median())
+    
+    def encode(col_name, map_key):
+        mapping = MAPPINGS_MODEL[map_key]
+        return df[col_name].astype(str).apply(lambda x: mapping.get(x.strip(), 0))
+    
+    # Encoding Features
+    df['gender_enc'] = df['gender'].map({'Laki-laki': 0, 'Perempuan': 1})
+    df['hangout_freq_enc'] = encode('hangout_freq', 'hangout')
+    df['eating_out_freq_enc'] = encode('freq_eating_out', 'freq')
+    df['social_media_duration_enc'] = encode('daily_social_media_hours', 'duration')
+    df['peer_influence_decision_enc'] = encode('Peer_influance_decision', 'influence')
+    df['online_shopping_freq_enc'] = encode('online_shopping_frequency', 'online')
+    df['general_buying_freq_enc'] = encode('freq_buying_general', 'freq')
+    df['impulsive_buying_freq_enc'] = encode('freq_impulsive_buying', 'impulsive')
+    df['peer_influenced_buying_enc'] = encode('peer_influenced_buying', 'freq')
+    df['fear_of_rejection_enc'] = encode('fear_of_rejection', 'fear')
+    df['influencer_impact_enc'] = encode('influencer_impact', 'influence')
+    
+    agrees = {
+        'attitude_need_trend_acceptance': 'need_trend_acceptance_enc',
+        'attitude_money_spent_on_friends': 'money_spent_on_friends_enc',
+        'attitude_driven_by_social_trends': 'driven_by_social_trends_enc',
+        'attitude_sacrifice_basic_needs': 'sacrifice_basic_needs_for_trends_enc',
+        'attitude_hangout_increase': 'hangout_increase_due_to_friends_enc'
+    }
+    for old, new in agrees.items():
+        df[new] = encode(old, 'agree')
+    
+    # Target Encoding
+    status_map = {'Hemat': 0, 'Wajar': 1, 'Boros': 2, 'Defisit (Nombok)': 3}
+    df['Status_Keuangan_enc'] = df['financial_status'].map(status_map)
+    
+    # Hitung FOMO score
+    fomo_feature_cols_for_eval = [
+        'fear_of_rejection_enc',
+        'need_trend_acceptance_enc',
+        'driven_by_social_trends_enc',
+        'peer_influence_decision_enc'
+    ]
+    df['fomo_score'] = df[fomo_feature_cols_for_eval].mean(axis=1)
+    
+    # Susun Fitur
+    features = [
+        'age', 'gender_enc', 'monthly_allowance', 
+        'peer_influenced_buying_enc', 'eating_out_freq_enc', 'general_buying_freq_enc',
+        'need_trend_acceptance_enc', 'money_spent_on_friends_enc', 'driven_by_social_trends_enc',
+        'sacrifice_basic_needs_for_trends_enc', 'hangout_increase_due_to_friends_enc',
+        'peer_influence_decision_enc', 'fear_of_rejection_enc', 'influencer_impact_enc',
+        'hangout_freq_enc', 'social_media_duration_enc', 'online_shopping_freq_enc',
+        'impulsive_buying_freq_enc',
+        'fomo_score'
+    ]
+    
+    df_clean = df.dropna(subset=features + ['Status_Keuangan_enc', 'monthly_total_spending'])
+    return df_clean[features], df_clean['Status_Keuangan_enc'], df_clean['monthly_total_spending']
+
+# ==========================================
+# 5. SIDEBAR GLOBAL
+# ==========================================
+st.sidebar.markdown("""
+    <div class='sidebar-title'>
+        <h1>🎓 Student Lifestyle</h1>
+        <p>Sistem Analisis & Prediksi</p>
+    </div>
+""", unsafe_allow_html=True)
+
+menu = st.sidebar.radio(
+    "Navigasi Menu",
+    ["🏠 Beranda", "🔍 Analisis EDA", "🤖 Prediksi AI", "📈 Evaluasi Model"],
+    index=0
+)
+
+st.sidebar.divider()
+
+st.sidebar.markdown("### 📝 Input Profil Siswa")
+st.sidebar.caption("Data untuk keperluan prediksi")
+
+user_input = {}
+
+with st.sidebar.expander("💰 Profil & Keuangan", expanded=False):
+    user_input['age'] = st.number_input("Usia", 10, 25, 16)
+    gender_txt = st.selectbox("Jenis Kelamin", ["Laki-laki", "Perempuan"])
+    user_input['gender_enc'] = 0 if gender_txt == "Laki-laki" else 1
+    user_input['monthly_allowance'] = st.number_input("Uang Saku Bulanan (Rp)", 0, 10000000, 200000, step=10000)
+
+def sb(label, key):
+    opt = list(MAPPINGS_MODEL[key].keys())
+    val = st.selectbox(label, opt)
+    return MAPPINGS_MODEL[key][val]
+
+with st.sidebar.expander("🛍️ Gaya Hidup", expanded=False):
+    user_input['hangout_freq_enc'] = sb("Frekuensi Nongkrong", 'hangout')
+    user_input['eating_out_freq_enc'] = sb("Makan di Luar", 'freq')
+    user_input['social_media_duration_enc'] = sb("Durasi Media Sosial", 'duration')
+    user_input['peer_influence_decision_enc'] = sb("Pengaruh Teman", 'influence')
+    user_input['online_shopping_freq_enc'] = sb("Belanja Online", 'online')
+    user_input['general_buying_freq_enc'] = sb("Belanja Umum", 'freq')
+    user_input['impulsive_buying_freq_enc'] = sb("Belanja Impulsif", 'impulsive')
+    user_input['peer_influenced_buying_enc'] = sb("Beli Karena Teman", 'freq')
+
+with st.sidebar.expander("🧠 Psikologis", expanded=False):
+    user_input['fear_of_rejection_enc'] = sb("Takut Ditolak", 'fear')
+    user_input['influencer_impact_enc'] = sb("Pengaruh Influencer", 'influence')
+    user_input['need_trend_acceptance_enc'] = sb("Butuh Ikuti Tren", 'agree')
+    user_input['money_spent_on_friends_enc'] = sb("Uang untuk Teman", 'agree')
+    user_input['driven_by_social_trends_enc'] = sb("Terdorong Tren", 'agree')
+    user_input['sacrifice_basic_needs_for_trends_enc'] = sb("Rela Hemat demi Tren", 'agree')
+    user_input['hangout_increase_due_to_friends_enc'] = sb("Nongkrong karena Teman", 'agree')
+
+# ==========================================
+# 6. LOGIKA HALAMAN
+# ==========================================
+
+# --- HALAMAN BERANDA ---
+if menu == "🏠 Beranda":
+    st.markdown("""
+        <div class='main-header'>
+            <h1>Dashboard Gaya Hidup Siswa SMA</h1>
+            <p>Analisis Dampak Tekanan Lingkup Pertemanan dan Media Sosial di Toba</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+        <div class='custom-card'>
+            <h2 style='color: #495057; margin-top: 0; font-size: 1.6rem;'>Tentang Proyek</h2>
+            <p style='font-size: 1rem; line-height: 1.7; color: #6c757d;'>
+                Dashboard ini menyajikan analisis mendalam tentang bagaimana <strong>tekanan teman sebaya</strong> 
+                dan <strong>media sosial</strong> mempengaruhi keputusan finansial siswa SMA. 
+                Menggunakan teknologi <strong>Machine Learning</strong>, kami dapat memprediksi pola pengeluaran, 
+                status keuangan, dan tingkat FOMO pada siswa.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if df_raw is not None:
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        st.markdown("<h3 style='color: #495057; margin: 1.5rem 0 1rem 0;'>📊 Statistik Responden</h3>", unsafe_allow_html=True)
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown(f"""
+                <div class='metric-card'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.8;'>Total Responden</p>
+                    <h3>{len(df_raw)}</h3>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            avg_allowance = df_raw['Jumlah uang bulanan'].mean()
+            st.markdown(f"""
+                <div class='metric-card blue'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.8;'>Rata-rata Uang Saku</p>
+                    <h3>Rp {avg_allowance:,.0f}</h3>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            avg_spending = df_raw['Total pengeluaran dalam satu bulan'].mean()
+            st.markdown(f"""
+                <div class='metric-card orange'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.8rem; opacity: 0.8;'>Rata-rata Pengeluaran</p>
+                    <h3>Rp {avg_spending:,.0f}</h3>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            status_mode = df_raw['Status_Keuangan'].mode()[0]
+            status_class = {
+                'Hemat': 'green', 
+                'Wajar': 'blue', 
+                'Boros': 'orange', 
+                'Defisit (Nombok)': 'red'
+            }.get(status_mode, '')
+            st.markdown(f"""
+                <div class='metric-card {status_class}'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.rem; opacity: 0.8;'>Status Terbanyak</p>
+                    <h3 style='font-size: 1.5rem;'>{status_mode}</h3>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("<br><h3 style='color: #495057; margin: 2rem 0 1rem 0;'>✨ Fitur Dashboard</h3>", unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+                <div class='custom-card'>
+                    <h3 style='color: #495057; font-size: 1.3rem; margin-top: 0;'>🔍 Analisis EDA</h3>
+                    <p style='line-height: 1.7; color: #6c757d; font-size: 0.95rem;'>
+                        Eksplorasi data lengkap dengan visualisasi distribusi demografis, 
+                        pola finansial, pengaruh sosial, dan analisis hubungan antar variabel.
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("""
+                <div class='custom-card'>
+                    <h3 style='color: #495057; font-size: 1.3rem; margin-top: 0;'>📈 Evaluasi Model</h3>
+                    <p style='line-height: 1.7; color: #6c757d; font-size: 0.95rem;'>
+                        Lihat performa model Machine Learning yang digunakan, dengan metrik 
+                        akurasi klasifikasi dan regresi (R², MAE, RMSE) secara real-time.
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("""
+                <div class='custom-card'>
+                    <h3 style='color: #495057; font-size: 1.3rem; margin-top: 0;'>🤖 Prediksi AI</h3>
+                    <p style='line-height: 1.7; color: #6c757d; font-size: 0.95rem; margin-bottom: 0.8rem;'>
+                        Sistem prediksi multi-dimensi menggunakan 4 model ML:
+                    </p>
+                    <ul style='color: #6c757d; font-size: 0.9rem; line-height: 1.8; margin: 0; padding-left: 1.5rem;'>
+                        <li>Klasifikasi Status Keuangan</li>
+                        <li>Prediksi Jumlah Pengeluaran</li>
+                        <li>Analisis Skor Impulsif</li>
+                        <li>Clustering Tipe Siswa</li>
+                    </ul>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        st.markdown("""
+            <div class='custom-card' style='background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; text-align: center; padding: 2rem;'>
+                <h2 style='color: white; margin: 0; font-size: 1.6rem;'>🚀 Mulai Eksplorasi</h2>
+                <p style='font-size: 1rem; color: rgba(255,255,255,0.9); margin: 0.5rem 0 0 0;'>
+                    Gunakan menu di sidebar untuk analisis data, prediksi, atau evaluasi model
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.error("Data CSV tidak ditemukan. Pastikan file 'cleaned_processed_final.csv' tersedia.")
+
+# --- HALAMAN ANALISIS EDA ---
+elif menu == "🔍 Analisis EDA":
+    st.markdown("""
+        <div class='main-header'>
+            <h1>Exploratory Data Analysis</h1>
+            <p>Analisis Mendalam Data Gaya Hidup Siswa</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if df_raw is not None:
+        # Rename mapping untuk EDA
+        rename_mapping_eda = {
+            'Timestamp': 'Timestamp', 'Usia': 'age', 'JK': 'gender', 'Sekolah': 'school', 'Kelas': 'grade_level',
+            'Jumlah uang bulanan': 'monthly_allowance', 'Total pengeluaran dalam satu bulan': 'monthly_total_spending',
+            'Seberapa besar pengaruh teman-teman Anda dalam pengambilan keputusan sehari-hari (contohnya dalam memilih pakaian, tempat nongkrong dan barang yang ingin dibeli)?': 'Peer_influance_decision',
+            'Seberapa besar rasa takut Anda merasa ditolak dalam pertemanan jika dianggap ketinggalan tren atau tidak mengikuti gaya teman-teman Anda?': 'fear_of_rejection',
+            'Seberapa sering Anda membeli suatu barang karena diajak atau dipengaruhi oleh teman Anda, bukan karena kebutuhan pribadi?': 'peer_influenced_buying',
+            'Dalam seminggu berapa kali Anda biasanya keluar untuk nongkrong  bersama teman?': 'hangout_frequency',
+            'Media sosial yang sering digunakan': 'most_used_social_media',
+            'Lama rata-rata Anda menggunakan media sosial': 'daily_social_media_hours',
+            'Seberapa besar pengaruh rekomendasi influencer terhadap pilihan belanja atau gaya hidup Anda?': 'influencer_impact',
+            'Dalam satu bulan, berapa kali Anda melakukan pembelian melalui platform belanja online seperti Shopee, Tokopedia dan Tiktok Shop?': 'online_shopping_frequency',
+            'Seberapa sering Anda makan atau membeli jajanan diluar rumah dalam seminggu?': 'eating_out_frequency',
+            'Seberapa sering Anda membeli barang dalam satu bulan (termasuk jajan, nongkrong, belanja dan kebutuhan lainnya)?': 'freq_total_purchase_monthly',
+            'Seberapa sering Anda membeli barang secara spontan tanpa perencanaan sebelumnya (impulsive buying)?': 'freq_impulsive_buying',
+            'Saya merasa perlu membeli barang-barang yang sedang tren agar saya dapat diterima dalam kelompok pertemanan saya': 'attitude_need_trend_acceptance',
+            'Sebagian besar uang saku saya habis karena kegiatan bersama teman, seperti nongkrong, makan diluar atau mengikuti tren lain?': 'attitude_money_spent_on_peers',
+            'Saya sering merasa terdorong untuk mencoba tempat-tempat yang sedang viral, meskipun sebenarnya tempat tersebut tidak terlalu menarik bagi saya': 'attitude_driven_by_viral',
+            'Saya sering merasa terdorong untuk mencoba tempat-tempat yang sedang tren di media sosial karena banyak teman saya yang melakukannya': 'trend_place_pressure',
+            'Saya rela mengurangi atau menghemat uang makan dan transportasi agar bisa membeli barang atau mengikuti tren yang sedang populer di sekolah': 'saving_for_trend',
+            'Frekuensi saya nongkrong di kafe atau tempat hangout tertentu meningkat karena sering diajak atau dipengaruhi oleh teman':'hangout_increase_friends',
+            'Rasio_Pengeluaran':'spending_ratio',
+            'Status_Keuangan':'financial_status'
+        }
+        df_eda = df_raw.rename(columns=rename_mapping_eda)
+        
+        sns.set_style("whitegrid")
+        # Remove the global grey palette to allow custom colors per chart
+        plt.rcParams['figure.facecolor'] = 'white'
+        
+        # TAB LENGKAP
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+            "👤 Demografi", 
+            "💰 Finansial", 
+            "📱 Sosial & Perilaku", 
+            "🔗 Hubungan Variabel",
+            "🧮 Uji Statistik"
+        ])
+        
+        # 1. DEMOGRAFI
+        with tab1:
+            st.markdown("<h3 style='color: #495057; margin-bottom: 1.5rem;'>👤 Distribusi Variabel Demografis</h3>", unsafe_allow_html=True)
+            
+            c1, c2 = st.columns(2)
+            
+            with c1:
+                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+                st.write("**Distribusi Gender**")
+                fig, ax = plt.subplots(figsize=(4.5, 5))
+                gender_counts = df_eda['gender'].value_counts()
+                colors = ['#6366f1', '#a855f7']
+                ax.pie(gender_counts.values, labels=gender_counts.index, autopct='%1.1f%%', 
+                       startangle=90, colors=colors, textprops={'fontsize': 11, 'weight': '500'})
+                ax.set_title('Distribusi Gender Responden', fontsize=13, weight='600', pad=15)
+                st.pyplot(fig)
+                plt.close()
+                st.markdown("</div>", unsafe_allow_html=True)
+            
+            with c2:
+                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+                st.write("**Distribusi Kelas**")
+                grade_order = ['X', 'XI', 'XII']
+                df_eda['grade_level'] = pd.Categorical(df_eda['grade_level'], categories=grade_order, ordered=True)
+                fig, ax = plt.subplots(figsize=(5.5, 5))
+                sns.countplot(x='grade_level', data=df_eda, ax=ax, palette=['#60a5fa', '#3b82f6', '#2563eb'])
+                ax.set_title('Distribusi Kelas Responden', fontsize=13, weight='600', pad=15)
+                ax.set_xlabel('Kelas', fontsize=11, weight='500')
+                ax.set_ylabel('Jumlah Siswa', fontsize=11, weight='500')
+                st.pyplot(fig)
+                plt.close()
+                st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Distribusi Usia**")
+            fig, ax = plt.subplots(figsize=(12, 4))
+            sns.histplot(df_eda['age'], bins=10, kde=True, ax=ax, color='#14b8a6')
+            ax.set_title('Distribusi Usia Responden', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Usia (tahun)', fontsize=11, weight='500')
+            ax.set_ylabel('Frekuensi', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Distribusi Sekolah**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            school_palette = sns.color_palette("Set2", n_colors=len(df_eda['school'].unique()))
+            sns.countplot(y='school', data=df_eda, order=df_eda['school'].value_counts().index, 
+                         ax=ax, palette=school_palette)
+            ax.set_title('Distribusi Sekolah Responden', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Sekolah', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        # 2. FINANSIAL
+        with tab2:
+            st.markdown("<h3 style='color: #495057; margin-bottom: 1.5rem;'>💰 Analisis Pola Keuangan & Pengeluaran</h3>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Distribusi Status Keuangan**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            status_colors = {'Hemat': '#10b981', 'Wajar': '#3b82f6', 'Boros': '#f59e0b', 'Defisit (Nombok)': '#ef4444'}
+            status_counts = df_eda['financial_status'].value_counts()
+            colors_ordered = [status_colors.get(status, '#6c757d') for status in status_counts.index]
+            sns.barplot(y=status_counts.index, x=status_counts.values, ax=ax, palette=colors_ordered)
+            ax.set_title('Status Keuangan Responden', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah Siswa', fontsize=11, weight='500')
+            ax.set_ylabel('Status Keuangan', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            c1, c2 = st.columns(2)
+            
+            with c1:
+                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+                st.write("**Distribusi Uang Saku Bulanan**")
+                fig, ax = plt.subplots(figsize=(10, 4))
+                sns.histplot(df_eda['monthly_allowance'], bins=20, kde=True, ax=ax, color='#10b981')
+                ax.set_title('Uang Saku Bulanan', fontsize=13, weight='600', pad=15)
+                ax.set_xlabel('Uang Saku (Rp)', fontsize=11, weight='500')
+                ax.set_ylabel('Jumlah Siswa', fontsize=11, weight='500')
+                ax.ticklabel_format(style='plain', axis='x')
+                st.pyplot(fig)
+                plt.close()
+                st.markdown("</div>", unsafe_allow_html=True)
+            
+            with c2:
+                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+                st.write("**Distribusi Total Pengeluaran**")
+                fig, ax = plt.subplots(figsize=(10, 4))
+                sns.histplot(df_eda['monthly_total_spending'], bins=20, kde=True, ax=ax, color='#f59e0b')
+                ax.set_title('Total Pengeluaran Bulanan', fontsize=13, weight='600', pad=15)
+                ax.set_xlabel('Pengeluaran (Rp)', fontsize=11, weight='500')
+                ax.set_ylabel('Jumlah Siswa', fontsize=11, weight='500')
+                ax.ticklabel_format(style='plain', axis='x')
+                st.pyplot(fig)
+                plt.close()
+                st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Rasio Pengeluaran Terhadap Uang Saku**")
+            fig, ax = plt.subplots(figsize=(12, 4))
+            sns.histplot(df_eda['spending_ratio'], bins=20, kde=True, ax=ax, color='#8b5cf6')
+            ax.set_title('Distribusi Rasio Pengeluaran', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Rasio (Pengeluaran / Uang Saku)', fontsize=11, weight='500')
+            ax.set_ylabel('Frekuensi', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        # 3. SOSIAL & PERILAKU
+        with tab3:
+            st.markdown("<h3 style='color: #495057; margin-bottom: 1.5rem;'>📱 Pengaruh Teman Sebaya dan Media Sosial</h3>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Top 10 Platform Media Sosial**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            social_media_counts = df_eda['most_used_social_media'].value_counts().head(10)
+            sns.barplot(x=social_media_counts.values, y=social_media_counts.index, ax=ax, 
+                       palette='viridis')
+            ax.set_title('Top 10 Platform Media Sosial', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah Pengguna', fontsize=11, weight='500')
+            ax.set_ylabel('Platform', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Durasi Penggunaan Media Sosial Per Hari**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            duration_order = df_eda['daily_social_media_hours'].value_counts().index
+            duration_palette = sns.light_palette("#3b82f6", n_colors=len(duration_order), reverse=True)
+            sns.countplot(y='daily_social_media_hours', data=df_eda, 
+                         order=duration_order, 
+                         ax=ax, palette=duration_palette)
+            ax.set_title('Rata-rata Penggunaan Media Sosial Per Hari', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah Siswa', fontsize=11, weight='500')
+            ax.set_ylabel('Durasi', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            c1, c2 = st.columns(2)
+            
+            with c1:
+                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+                st.write("**Pengaruh Teman dalam Keputusan**")
+                fig, ax = plt.subplots(figsize=(10, 5))
+                peer_order = df_eda['Peer_influance_decision'].value_counts().index
+                peer_palette = sns.light_palette("#f59e0b", n_colors=len(peer_order), reverse=True)
+                sns.countplot(y='Peer_influance_decision', data=df_eda, 
+                             order=peer_order, 
+                             ax=ax, palette=peer_palette)
+                ax.set_title('Pengaruh Teman dalam Pengambilan Keputusan', fontsize=11, weight='600', pad=12)
+                ax.set_xlabel('Jumlah', fontsize=10, weight='500')
+                ax.set_ylabel('Tingkat Pengaruh', fontsize=10, weight='500')
+                st.pyplot(fig)
+                plt.close()
+                st.markdown("</div>", unsafe_allow_html=True)
+            
+            with c2:
+                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+                st.write("**Takut Ditolak Jika Tidak Ikut Tren**")
+                fig, ax = plt.subplots(figsize=(10, 5))
+                fear_order = df_eda['fear_of_rejection'].value_counts().index
+                fear_palette = sns.light_palette("#ef4444", n_colors=len(fear_order), reverse=True)
+                sns.countplot(y='fear_of_rejection', data=df_eda, 
+                             order=fear_order, 
+                             ax=ax, palette=fear_palette)
+                ax.set_title('Rasa Takut Ditolak dalam Pertemanan', fontsize=11, weight='600', pad=12)
+                ax.set_xlabel('Jumlah', fontsize=10, weight='500')
+                ax.set_ylabel('Tingkat Ketakutan', fontsize=10, weight='500')
+                st.pyplot(fig)
+                plt.close()
+                st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Frekuensi Pembelian Karena Pengaruh Teman**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            buying_order = df_eda['peer_influenced_buying'].value_counts().index
+            buying_palette = sns.light_palette("#14b8a6", n_colors=len(buying_order), reverse=True)
+            sns.countplot(y='peer_influenced_buying', data=df_eda, 
+                         order=buying_order, 
+                         ax=ax, palette=buying_palette)
+            ax.set_title('Pembelian Karena Dipengaruhi Teman', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah Siswa', fontsize=11, weight='500')
+            ax.set_ylabel('Frekuensi', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Pengaruh Influencer Terhadap Gaya Hidup**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            influencer_order = df_eda['influencer_impact'].value_counts().index
+            influencer_palette = sns.light_palette("#ec4899", n_colors=len(influencer_order), reverse=True)
+            sns.countplot(y='influencer_impact', data=df_eda, 
+                         order=influencer_order, 
+                         ax=ax, palette=influencer_palette)
+            ax.set_title('Dampak Influencer pada Pilihan Gaya Hidup', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah Siswa', fontsize=11, weight='500')
+            ax.set_ylabel('Tingkat Pengaruh', fontsize=11, weight='500')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        # 4. HUBUNGAN VARIABEL
+        with tab4:
+            st.markdown("<h3 style='color: #495057; margin-bottom: 1.5rem;'>🔗 Analisis Hubungan Antar Variabel</h3>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Hubungan Uang Saku dan Total Pengeluaran**")
+            fig, ax = plt.subplots(figsize=(12, 5))
+            sns.scatterplot(x='monthly_allowance', y='monthly_total_spending', data=df_eda, 
+                           ax=ax, alpha=0.6, color='#3b82f6', s=60)
+            ax.set_title('Korelasi Uang Saku dengan Pengeluaran', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Uang Saku Bulanan (Rp)', fontsize=11, weight='500')
+            ax.set_ylabel('Total Pengeluaran (Rp)', fontsize=11, weight='500')
+            ax.ticklabel_format(style='plain', axis='both')
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Pengaruh Teman Berdasarkan Gender**")
+            fig, ax = plt.subplots(figsize=(14, 5))
+            sns.countplot(y='Peer_influance_decision', hue='gender', data=df_eda, ax=ax, 
+                         palette=['#6366f1', '#ec4899'])
+            ax.set_title('Pengaruh Teman dalam Pengambilan Keputusan Berdasarkan Gender', 
+                        fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah Siswa', fontsize=11, weight='500')
+            ax.set_ylabel('Tingkat Pengaruh', fontsize=11, weight='500')
+            ax.legend(title='Gender', fontsize=10)
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Rasa Takut Ditolak Berdasarkan Usia**")
+            fig, ax = plt.subplots(figsize=(14, 5))
+            sns.countplot(y='fear_of_rejection', hue='age', data=df_eda, ax=ax, palette='Set3')
+            ax.set_title('Rasa Takut Ditolak Berdasarkan Usia', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Tingkat Ketakutan', fontsize=11, weight='500')
+            ax.legend(title='Usia', fontsize=9, ncol=3)
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Pengaruh Influencer Berdasarkan Durasi Media Sosial**")
+            fig, ax = plt.subplots(figsize=(14, 5))
+            sns.countplot(y='daily_social_media_hours', hue='influencer_impact', data=df_eda, ax=ax, 
+                         palette='husl')
+            ax.set_title('Pengaruh Influencer Berdasarkan Lama Penggunaan Media Sosial', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Durasi Penggunaan Media Sosial', fontsize=11, weight='500')
+            ax.legend(title='Pengaruh Influencer', fontsize=9, ncol=2)
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Matriks Korelasi Variabel Numerik**")
+            numeric_cols = ['age', 'monthly_allowance', 'monthly_total_spending', 'spending_ratio']
+            corr_matrix = df_eda[numeric_cols].corr()
+            fig, ax = plt.subplots(figsize=(10, 7))
+            sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", ax=ax, 
+                       linewidths=1, linecolor='white', center=0, vmin=-1, vmax=1)
+            ax.set_title('Matriks Korelasi Variabel Numerik', fontsize=13, weight='600', pad=15)
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<h4 style='color: #495057; margin: 2rem 0 1rem 0;'>Hubungan Tekanan Sosial dan Perilaku Konsumtif</h4>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Pengaruh Teman dan Pembelian Impulsif**")
+            fig, ax = plt.subplots(figsize=(14, 5))
+            sns.countplot(y='freq_impulsive_buying', hue='Peer_influance_decision', data=df_eda, ax=ax, 
+                         palette='muted')
+            ax.set_title('Hubungan Antara Pengaruh Teman dan Pembelian Impulsif', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Frekuensi Pembelian Impulsif', fontsize=11, weight='500')
+            ax.legend(title='Pengaruh Teman', fontsize=9, ncol=2)
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Takut Ditolak dan Kebutuhan Mengikuti Tren**")
+            fig, ax = plt.subplots(figsize=(14, 5))
+            sns.countplot(y='attitude_need_trend_acceptance', hue='fear_of_rejection', data=df_eda, ax=ax, 
+                         palette='Spectral')
+            ax.set_title('Hubungan Antara Rasa Takut Ditolak dan Pembelian Barang Trend', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Tingkat Persetujuan', fontsize=11, weight='500')
+            ax.legend(title='Rasa Takut Ditolak', fontsize=9, ncol=2)
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Pengaruh Influencer dan Pembelian Online**")
+            fig, ax = plt.subplots(figsize=(14, 5))
+            sns.countplot(y='online_shopping_frequency', hue='influencer_impact', data=df_eda, ax=ax, 
+                         palette='Set2')
+            ax.set_title('Hubungan Antara Pengaruh Influencer dan Pembelian Online', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Jumlah', fontsize=11, weight='500')
+            ax.set_ylabel('Frekuensi Pembelian Online', fontsize=11, weight='500')
+            ax.legend(title='Pengaruh Influencer', fontsize=9, ncol=2)
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        # 5. UJI STATISTIK
+        with tab5:
+            st.markdown("<h3 style='color: #495057; margin-bottom: 1rem;'>🧮 Uji Asosiasi Chi-Square</h3>", unsafe_allow_html=True)
+            
+            st.markdown("""
+                <div class='info-card'>
+                    <p style='margin: 0; color: #495057; line-height: 1.7;'>
+                        <strong>Uji Chi-Square</strong> digunakan untuk melihat hubungan signifikan antara dua variabel kategorikal.<br>
+                        <strong>H0:</strong> Tidak ada hubungan (independen) • 
+                        <strong>H1:</strong> Ada hubungan signifikan<br>
+                        Jika <strong>P-Value < 0.05</strong>, maka ada hubungan signifikan.
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            categorical_vars = [
+                'gender', 'grade_level',
+                'Peer_influance_decision', 
+                'fear_of_rejection',
+                'peer_influenced_buying',
+                'influencer_impact',
+                'freq_impulsive_buying',
+                'financial_status',
+                'online_shopping_frequency',
+                'attitude_need_trend_acceptance'
+            ]
+            
+            selected_vars = st.multiselect("Pilih Variabel untuk Diuji", categorical_vars, default=categorical_vars[:6])
+            
+            if len(selected_vars) > 1:
+                chi2_results = []
+                p_value_matrix = pd.DataFrame(index=selected_vars, columns=selected_vars, dtype=float)
+                
+                for i, col1 in enumerate(selected_vars):
+                    for j, col2 in enumerate(selected_vars):
+                        if i < j:
+                            contingency_table = pd.crosstab(df_eda[col1], df_eda[col2])
+                            chi2, p, dof, expected = chi2_contingency(contingency_table)
+                            
+                            status = "Signifikan" if p < 0.05 else "Tidak Signifikan"
+                            chi2_results.append({
+                                'Variabel 1': col1,
+                                'Variabel 2': col2,
+                                'Chi-Square': f"{chi2:.2f}",
+                                'P-Value': p,
+                                'Kesimpulan': status
+                            })
+                        
+                        if i != j:
+                            contingency_table = pd.crosstab(df_eda[col1], df_eda[col2])
+                            chi2, p, _, _ = chi2_contingency(contingency_table)
+                            p_value_matrix.loc[col1, col2] = p
+                            p_value_matrix.loc[col2, col1] = p
+                        else:
+                            p_value_matrix.loc[col1, col2] = np.nan
+                
+                st.markdown("<h4 style='color: #495057; margin: 1.5rem 0 1rem 0;'>Tabel Hasil Uji</h4>", unsafe_allow_html=True)
+                df_res = pd.DataFrame(chi2_results).sort_values(by='P-Value')
+                
+                st.dataframe(
+                    df_res.style.format({'P-Value': '{:.4f}'})
+                    .applymap(lambda v: 'background-color: #f0fdf4; color: #10b981; font-weight: 600' if v == 'Signifikan' else 'background-color: #fef2f2; color: #ef4444', subset=['Kesimpulan']),
+                    use_container_width=True
+                )
+                
+                st.markdown("<br><h4 style='color: #495057; margin: 1.5rem 0 1rem 0;'>Heatmap Signifikansi (P-Value)</h4>", unsafe_allow_html=True)
+                st.caption("Warna gelap menunjukkan hubungan yang semakin kuat/signifikan (P-Value rendah)")
+                
+                fig, ax = plt.subplots(figsize=(10, 8))
+                sns.heatmap(1 - p_value_matrix.fillna(0), annot=False, cmap='Greys', linewidths=0.5, ax=ax,
+                           cbar_kws={'label': 'Kekuatan Hubungan'})
+                ax.set_title('Matriks Signifikansi Hubungan Antar Variabel', fontsize=13, weight='600', pad=15)
+                st.pyplot(fig)
+                plt.close()
+            else:
+                st.warning("Silakan pilih minimal 2 variabel untuk melakukan uji Chi-Square.")
+    else:
+        st.error("Data CSV tidak ditemukan.")
+
+# --- HALAMAN PREDIKSI AI ---
+elif menu == "🤖 Prediksi AI":
+    st.markdown("""
+        <div class='main-header'>
+            <h1>Prediksi Multi-Dimensi</h1>
+            <p>Analisis Profil Siswa dengan 4 Model Machine Learning</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if models is None:
+        st.error("Model Machine Learning belum dimuat. Pastikan file model tersedia di folder 'models/'.")
+    else:
+        st.markdown("""
+            <div class='info-card'>
+                <p style='margin: 0; color: #495057; line-height: 1.7;'>
+                    <strong>Cara Menggunakan:</strong> Isi data profil siswa di sidebar, kemudian klik tombol di bawah untuk mendapatkan analisis lengkap.
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚀 Jalankan Analisis AI", type="primary", use_container_width=True):
+            with st.spinner("Menjalankan analisis AI..."): # Changed from "AI sedang menganalisis"
+                # Calculate FOMO score
+                fomo_features_for_model = [
+                    user_input['fear_of_rejection_enc'],
+                    user_input['need_trend_acceptance_enc'],
+                    user_input['driven_by_social_trends_enc'],
+                    user_input['peer_influence_decision_enc']
+                ]
+                fomo_score = np.mean(fomo_features_for_model)
+                
+                # Prepare input array
+                features = [
+                    user_input['age'], user_input['gender_enc'], user_input['monthly_allowance'],
+                    user_input['peer_influenced_buying_enc'], user_input['eating_out_freq_enc'],
+                    user_input['general_buying_freq_enc'], user_input['need_trend_acceptance_enc'],
+                    user_input['money_spent_on_friends_enc'], user_input['driven_by_social_trends_enc'],
+                    user_input['sacrifice_basic_needs_for_trends_enc'], user_input['hangout_increase_due_to_friends_enc'],
+                    user_input['peer_influence_decision_enc'], user_input['fear_of_rejection_enc'],
+                    user_input['influencer_impact_enc'], user_input['hangout_freq_enc'],
+                    user_input['social_media_duration_enc'], user_input['online_shopping_freq_enc'],
+                    user_input['impulsive_buying_freq_enc'],
+                    fomo_score
+                ]
+                X_in = np.array(features).reshape(1, -1)
+                
+                # Run models
+                cls_pred = models['klasifikasi'].predict(X_in)[0]
+                status_txt = {0: 'Hemat', 1: 'Wajar', 2: 'Boros', 3: 'Defisit'}.get(cls_pred, "Unknown")
+                
+                reg_pred = models['regresi'].predict(X_in)[0]
+                
+                if 'regresi_impulsif' in models:
+                    feat_imp = [f for i, f in enumerate(features) if i != 17]
+                    X_imp = np.array(feat_imp).reshape(1, -1)
+                    try:
+                        imp_score = models['regresi_impulsif'].predict(X_imp)[0]
+                    except:
+                        imp_score = user_input['impulsive_buying_freq_enc']
+                else:
+                    imp_score = 0
+                
+                cluster_input = [
+                    user_input['monthly_allowance'], reg_pred,
+                    user_input['peer_influence_decision_enc'], user_input['fear_of_rejection_enc'],
+                    user_input['peer_influenced_buying_enc'], user_input['hangout_freq_enc'],
+                    user_input['social_media_duration_enc'], user_input['online_shopping_freq_enc'],
+                    user_input['impulsive_buying_freq_enc'], user_input['eating_out_freq_enc']
+                ]
+                X_clust = models['scaler'].transform(np.array(cluster_input).reshape(1, -1))
+                clust_pred = models['kmeans'].predict(X_clust)[0]
+                cluster_txt = {0: 'Cluster 0 (Mandiri)', 1: 'Cluster 1 (Sosial/Gaul)', 2: 'Cluster 2 (Sultan)'}.get(clust_pred, str(clust_pred))
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("""
+                    <div class='custom-card'>
+                        <h3 style='color: #495057; margin-top: 0; font-size: 1.4rem;'>💰 Profil Keuangan</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                status_class = {'Hemat': 'green', 'Wajar': 'blue', 'Boros': 'orange', 'Defisit': 'red'}.get(status_txt, '')
+                st.markdown(f"""
+                    <div class='metric-card {status_class}'>
+                        <p style='margin: 0 0 0.3rem 0; font-size: 0.85rem; opacity: 0.85;'>Status Keuangan</p>
+                        <h3 style='font-size: 2rem;'>{status_txt}</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                    <div class='custom-card'>
+                        <h4 style='color: #6c757d; font-size: 0.95rem; margin: 0 0 0.5rem 0;'>Estimasi Pengeluaran</h4>
+                        <p style='font-size: 2rem; font-weight: 700; color: #495057; margin: 0;'>Rp {reg_pred:,.0f}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                diff = user_input['monthly_allowance'] - reg_pred
+                if diff < 0:
+                    st.markdown(f"""
+                        <div class='info-card error'>
+                            <p style='margin: 0; color: #dc2626; font-weight: 600;'>⚠️ Defisit: Rp {abs(diff):,.0f}</p>
+                            <p style='margin: 0.3rem 0 0 0; color: #6c757d; font-size: 0.9rem;'>Pengeluaran melebihi uang saku</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                        <div class='info-card success'>
+                            <p style='margin: 0; color: #059669; font-weight: 600;'>✓ Surplus: Rp {diff:,.0f}</p>
+                            <p style='margin: 0.3rem 0 0 0; color: #6c757d; font-size: 0.9rem;'>Sisa uang saku tersedia</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("""
+                    <div class='custom-card'>
+                        <h3 style='color: #495057; margin-top: 0; font-size: 1.4rem;'>👤 Profil Gaya Hidup</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                    <div class='metric-card'>
+                        <p style='margin: 0 0 0.3rem 0; font-size: 0.85rem; opacity: 0.85;'>Tipe Siswa</p>
+                        <h3 style='font-size: 1.6rem;'>{cluster_txt}</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                    <div class='custom-card'>
+                        <h4 style='color: #6c757d; font-size: 0.95rem; margin: 0 0 0.5rem 0;'>Skor Impulsif (AI)</h4>
+                        <p style='font-size: 2rem; font-weight: 700; color: #495057; margin: 0;'>{imp_score:.1f} / 5.0</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                if imp_score > 3:
+                    st.markdown("""
+                        <div class='info-card warning'>
+                            <p style='margin: 0; color: #d97706; font-weight: 600;'>⚠️ Kecenderungan belanja impulsif tinggi</p>
+                            <p style='margin: 0.3rem 0 0 0; color: #6c757d; font-size: 0.9rem;'>Disarankan untuk lebih merencanakan pembelian</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown("""
+                        <div class='info-card success'>
+                            <p style='margin: 0; color: #059669; font-weight: 600;'>✓ Kontrol diri belanja cukup baik</p>
+                            <p style='margin: 0.3rem 0 0 0; color: #6c757d; font-size: 0.9rem;'>Pertahankan kebiasaan baik ini</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            st.markdown("""
+                <div class='custom-card'>
+                    <h3 style='color: #495057; margin-top: 0; font-size: 1.4rem;'>🎯 Analisis FOMO (Fear of Missing Out)</h3>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            if fomo_score < 1.3:
+                fomo_status = "Tidak FOMO"
+                fomo_level = 1
+                fomo_class = "success"
+                fomo_color = "#10b981"
+            elif fomo_score < 2.1:
+                fomo_status = "Sedikit FOMO"
+                fomo_level = 2
+                fomo_class = "success"
+                fomo_color = "#3b82f6"
+            elif fomo_score < 2.9:
+                fomo_status = "Lumayan FOMO"
+                fomo_level = 3
+                fomo_class = "warning"
+                fomo_color = "#f59e0b"
+            elif fomo_score < 3.7:
+                fomo_status = "FOMO"
+                fomo_level = 4
+                fomo_class = "warning"
+                fomo_color = "#f59e0b"
+            else:
+                fomo_status = "Sangat FOMO"
+                fomo_level = 5
+                fomo_class = "error"
+                fomo_color = "#ef4444"
+            
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
+                st.markdown(f"""
+                    <div class='metric-card' style='background: linear-gradient(135deg, {fomo_color} 0%, {fomo_color}dd 100%);'>
+                        <p style='margin: 0 0 0.3rem 0; font-size: 0.85rem; opacity: 0.85;'>Status FOMO</p>
+                        <h3 style='font-size: 1.8rem;'>{fomo_status}</h3>
+                        <p style='margin: 0.5rem 0 0 0; font-size: 0.9rem;'>Skor: {fomo_score:.2f}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"""
+                    <div class='info-card {fomo_class}'>
+                        <h4 style='margin: 0 0 0.5rem 0; color: #495057;'>Intensitas FOMO</h4>
+                """, unsafe_allow_html=True)
+                
+                progress_value = min((fomo_score - 0.5) / (4.5 - 0.5), 1.0)
+                st.progress(progress_value)
+                
+                if fomo_level == 1:
+                    insight = "Sangat baik! Siswa menunjukkan kemandirian dan tidak mudah terpengaruh tekanan sosial atau tren."
+                elif fomo_level == 2:
+                    insight = "Cukup baik. Ada sedikit keinginan untuk ikut-ikutan, tapi siswa masih bisa mengendalikan dengan baik."
+                elif fomo_level == 3:
+                    insight = "Perlu sedikit waspada. Siswa mulai merasa tertekan untuk mengikuti tren, yang bisa memengaruhi pengeluaran."
+                elif fomo_level == 4:
+                    insight = "Hati-hati. Kecenderungan FOMO sudah cukup tinggi. Siswa perlu belajar memprioritaskan kebutuhan daripada keinginan."
+                else:
+                    insight = "Sangat perlu perhatian. Siswa sangat rentan terhadap tekanan sosial dan tren, yang berisiko besar terhadap stabilitas keuangan dan kesejahteraan mental."
+                
+                st.markdown(f"""
+                        <p style='margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.6; font-size: 0.95rem;'>{insight}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+
+# --- HALAMAN EVALUASI MODEL ---
+elif menu == "📈 Evaluasi Model":
+    st.markdown("""
+        <div class='main-header'>
+            <h1>Evaluasi Kinerja Model</h1>
+            <p>Analisis Performa Model Machine Learning Secara Real-Time</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+        <div class='info-card'>
+            <p style='margin: 0; color: #495057; line-height: 1.7;'>
+                <strong>Metode Evaluasi:</strong> Data dibagi 80% training dan 20% testing<br>
+                <strong>Metrik:</strong> 
+                • <strong>R²</strong> = seberapa baik model menjelaskan data (mendekati 1 lebih baik)
+                • <strong>MAE</strong> = rata-rata kesalahan absolut (Rp)
+                • <strong>RMSE</strong> = akar kuadrat rata-rata kesalahan kuadrat (memberikan bobot lebih pada kesalahan besar)
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if df_raw is not None and models is not None:
+        with st.spinner("Menghitung akurasi model..."):
+            X, y_cls, y_reg = preprocess_data_for_eval(df_raw)
+            X_train, X_test, y_cls_train, y_cls_test = train_test_split(X, y_cls, test_size=0.2, random_state=42)
+            _, _, y_reg_train, y_reg_test = train_test_split(X, y_reg, test_size=0.2, random_state=42)
+            
+            # Classification metrics
+            y_pred_cls = models['klasifikasi'].predict(X_test)
+            acc_cls = accuracy_score(y_cls_test, y_pred_cls)
+            
+            # Regression metrics
+            y_pred_reg = models['regresi'].predict(X_test)
+            r2_reg = r2_score(y_reg_test, y_pred_reg)
+            mae_reg = mean_absolute_error(y_reg_test, y_pred_reg)
+            rmse_reg = np.sqrt(mean_squared_error(y_reg_test, y_pred_reg))
+        
+        t1, t2 = st.tabs(["🌲 Klasifikasi", "📈 Regresi"])
+        
+        with t1:
+            st.markdown("<h3 style='color: #495057; margin-bottom: 1rem;'>Model Klasifikasi Status Keuangan</h3>", unsafe_allow_html=True)
+            
+            st.markdown(f"""
+                <div class='metric-card green'>
+                    <p style='margin: 0 0 0.3rem 0; font-size: 0.85rem; opacity: 0.85;'>Akurasi Keseluruhan</p>
+                    <h3>{acc_cls*100:.2f}%</h3>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Confusion Matrix**")
+            st.caption("Matriks ini menunjukkan performa model dalam mengklasifikasikan setiap status keuangan")
+            cm = confusion_matrix(y_cls_test, y_pred_cls)
+            fig, ax = plt.subplots(figsize=(10, 7))
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                       xticklabels=['Hemat','Wajar','Boros','Defisit'], 
+                       yticklabels=['Hemat','Wajar','Boros','Defisit'], 
+                       ax=ax, linewidths=1, linecolor='white')
+            ax.set_xlabel('Prediksi', fontsize=11, weight='500')
+            ax.set_ylabel('Aktual', fontsize=11, weight='500')
+            ax.set_title('Confusion Matrix Model Klasifikasi', fontsize=13, weight='600', pad=15)
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        with t2:
+            st.markdown("<h3 style='color: #495057; margin-bottom: 1rem;'>Model Regresi Prediksi Pengeluaran</h3>", unsafe_allow_html=True)
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.markdown(f"""
+                    <div class='metric-card blue'>
+                        <p style='margin: 0 0 0.3rem 0; font-size: 0.85rem; opacity: 0.85;'>R² Score</p>
+                        <h3>{r2_reg:.4f}</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"""
+                    <div class='metric-card orange'>
+                        <p style='margin: 0 0 0.3rem 0; font-size: 0.85rem; opacity: 0.85;'>MAE</p>
+                        <h3 style='font-size: 1.6rem;'>Rp {mae_reg:,.0f}</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col3:
+                st.markdown(f"""
+                    <div class='metric-card'>
+                        <p style='margin: 0 0 0.3rem 0; font-size: 0.85rem; opacity: 0.85;'>RMSE</p>
+                        <h3 style='font-size: 1.6rem;'>Rp {rmse_reg:,.0f}</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+            st.write("**Visualisasi Prediksi vs. Nilai Aktual**")
+            st.caption("Garis merah putus-putus menunjukkan prediksi sempurna. Semakin dekat titik ke garis, semakin akurat prediksinya")
+            fig, ax = plt.subplots(figsize=(12, 6))
+            sns.scatterplot(x=y_reg_test, y=y_pred_reg, alpha=0.6, ax=ax, color='#14b8a6', s=60)
+            ax.set_title('Prediksi vs. Nilai Aktual Pengeluaran', fontsize=13, weight='600', pad=15)
+            ax.set_xlabel('Nilai Aktual Pengeluaran (Rp)', fontsize=11, weight='500')
+            ax.set_ylabel('Prediksi Pengeluaran (Rp)', fontsize=11, weight='500')
+            ax.ticklabel_format(style='plain', axis='both')
+            ax.plot([0, y_reg_test.max()], [0, y_reg_test.max()], 'r--', linewidth=2, alpha=0.7)
+            ax.grid(True, alpha=0.3)
+            st.pyplot(fig)
+            plt.close()
+            st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.warning("Data atau model belum tersedia untuk evaluasi.")
